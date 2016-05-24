@@ -1,0 +1,21 @@
+{
+  "locale" : "en-EN",
+  "settings" : {
+    "legend" : "Settings",
+    "save" : "Save",
+    "success" : "Settings have been saved",
+    "blocked" : "No access to the microphone",
+    "assistant" : {
+      "name" : {
+        "label" : "Keyword",
+        "default" : "Alice",
+        "empty" : "Please specify keyword"
+      }
+    },
+    "address" : {
+      "label" : "Server address",
+      "default" : "localhost",
+      "empty" : "Please specify server address"
+    }
+  }
+}
