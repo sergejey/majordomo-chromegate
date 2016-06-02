@@ -6,7 +6,7 @@ require(
         var wsTimer=0;
         var wsSocket;
         var startedWebSockets=0;
-
+        var justSaid='';
 
         var rec = new Recognizer(
             {
@@ -32,7 +32,7 @@ require(
          payload.action = 'Subscribe';
          payload.data = new Object();
          payload.data.TYPE='events';
-         payload.data.EVENTS='SAY,SAYTO,SAYREPLY';
+         payload.data.EVENTS='SAY,SAYTO';
          console.log('Subscribing to '+payload.data.EVENTS);
          wsSocket.send(JSON.stringify(payload));
         }
@@ -61,14 +61,43 @@ require(
              ///connected
               startedWebSockets=1;
               clearTimeout(wsTimer);
-              //$.publish('wsConnected');
               console.log('WS connected ('+serverUrl+')');
               wsConnected();
             };
             wsSocket.onmessage = function(msg) {
               console.log('WS data ('+serverUrl+')');
               var response;
+              var message='';
               response = JSON.parse(msg.data);
+              console.log('Action:' + response.action);
+              if (response.action=='events') {
+                console.log(response);
+                var event_data=JSON.parse(response.data);
+                if (event_data.EVENT_DATA.NAME=='SAY') {
+                 message=event_data.EVENT_DATA.VALUE.message;
+                 if (message==justSaid) {
+                  message='';
+                 }
+                }
+                if (event_data.EVENT_DATA.NAME=='SAYTO') {
+                 message=event_data.EVENT_DATA.VALUE.message;
+                 var destination=event_data.EVENT_DATA.VALUE.destination;
+                 destination=destination.toUpperCase();
+                 var terminal=Storage.local('terminal', i18n('settings.terminal.default'));
+                 terminal=terminal.toUpperCase();
+                 if (destination==terminal) {
+                  console.log('Sayto action processed');
+                  justSaid=message;
+                 } else {
+                  message='';
+                 }
+                }
+              }
+              if (message!='') {
+                 notify(message);
+                 say(message);
+              }
+
               //$.publish('wsData', response);
               return;
             };
@@ -134,7 +163,7 @@ require(
             } else {
                 //init(_.partial(process, input));
             }
-            var serverUrl = "http://" + Storage.local('address', i18n('settings.address.default')) + '/command.php?qry='+encodeURIComponent(input);
+            var serverUrl = "http://" + Storage.local('address', i18n('settings.address.default')) + '/command.php?qry='+encodeURIComponent(input)+'&terminal='+Storage.local('terminal', i18n('settings.terminal.default'));
 
                  $.ajax({
                    url: serverUrl
@@ -168,13 +197,12 @@ require(
         }
 
         function init(callback) {
-        /*
+
             if (startWebSockets()) {
                 if (_.isFunction(callback)) {
                     callback();
                 }
             }
-        */
 
         }
     }

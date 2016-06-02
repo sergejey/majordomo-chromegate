@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "ChromeGateMJD",
   "description": "Chrome client for MajorDoMo",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "UseYoVoice",
   "offline_enabled" : false,
   "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",

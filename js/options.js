@@ -48,12 +48,13 @@
                     ctx.partial('template/settings.template',
                         {
                             name: Storage.local('name', i18n('settings.assistant.name.default')),
-                            address: Storage.local('address', i18n('settings.address.default'))
+                            address: Storage.local('address', i18n('settings.address.default')),
+							terminal: Storage.local('terminal', i18n('settings.terminal.default'))
                         },
                         function() {
-                            //$('#pitch').val(Storage.local('pitch', TTS.options));
-                            //$('#rate').val(Storage.local('rate', TTS.options));
-                            /*
+                            $('#pitch').val(Storage.local('pitch', TTS.options));
+                            $('#rate').val(Storage.local('rate', TTS.options));
+
                             var voice = Storage.local('voice');
                             var voice$ = $('#voice');
                             TTS.getVoices().forEach(function(v) {
@@ -61,7 +62,6 @@
                                 if (voice === v.name) option.attr('selected', 'selected');
                                 voice$.append(option);
                             });
-                            */
                         }
                     );
                     navigator.webkitGetUserMedia({audio: true}, function () {
@@ -73,6 +73,7 @@
                 this.post('#/settings', function(ctx) {
                     var name = $.trim(ctx.params['name']);
                     var address = $.trim(ctx.params['address']);
+					var terminal = $.trim(ctx.params['terminal']);
                     if (!name) {
                         showError(i18n('settings.assistant.name.empty'));
                     } else if (!address) {
@@ -81,10 +82,11 @@
                         var changed = address !== Storage.local('address', i18n('settings.address.default'));
                         save({
                             name: name,
-                            address: address
-                            //pitch: ctx.params['pitch'],
-                            //rate: ctx.params['rate'],
-                            //voice: ctx.params['voice']
+                            address: address,
+							terminal: terminal,
+                            pitch: ctx.params['pitch'],
+                            rate: ctx.params['rate'],
+                            voice: ctx.params['voice']
                         });
                         if (changed) {
                             chrome.runtime.sendMessage({init: true});
