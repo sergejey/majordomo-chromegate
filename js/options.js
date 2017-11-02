@@ -49,7 +49,7 @@
                         {
                             name: Storage.local('name', i18n('settings.assistant.name.default')),
                             address: Storage.local('address', i18n('settings.address.default')),
-							terminal: Storage.local('terminal', i18n('settings.terminal.default'))
+                                                        terminal: Storage.local('terminal', i18n('settings.terminal.default'))
                         },
                         function() {
                             $('#pitch').val(Storage.local('pitch', TTS.options));
@@ -57,6 +57,8 @@
 
                             var voice = Storage.local('voice');
                             var voice$ = $('#voice');
+                            var optionN = $('<option></option>').text(i18n('settings.turnoff')).val('');
+                            voice$.append(optionN);
                             TTS.getVoices().forEach(function(v) {
                                 var option = $('<option></option>').text(v.name).val(v.name);
                                 if (voice === v.name) option.attr('selected', 'selected');
@@ -73,17 +75,15 @@
                 this.post('#/settings', function(ctx) {
                     var name = $.trim(ctx.params['name']);
                     var address = $.trim(ctx.params['address']);
-					var terminal = $.trim(ctx.params['terminal']);
-                    if (!name) {
-                        showError(i18n('settings.assistant.name.empty'));
-                    } else if (!address) {
+                                        var terminal = $.trim(ctx.params['terminal']);
+                    if (!address) {
                         showError(i18n('settings.address.empty'));
                     } else {
                         var changed = address !== Storage.local('address', i18n('settings.address.default'));
                         save({
                             name: name,
                             address: address,
-							terminal: terminal,
+                            terminal: terminal,
                             pitch: ctx.params['pitch'],
                             rate: ctx.params['rate'],
                             voice: ctx.params['voice']

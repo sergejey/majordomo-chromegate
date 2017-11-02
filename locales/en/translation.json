@@ -3,6 +3,7 @@
   "settings" : {
     "legend" : "Settings",
     "save" : "Save",
+    "turnoff" : "Turn off",
     "success" : "Settings have been saved",
     "blocked" : "No access to the microphone",
     "assistant" : {
@@ -21,6 +22,6 @@
       "label" : "Terminal name",
       "default" : "main",
       "empty" : "Please specify terminal name"
-    }	
+    }   
   }
 }

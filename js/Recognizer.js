@@ -7,7 +7,8 @@ define(['util/i18n'], function(i16n) {
             var recognition = new webkitSpeechRecognition();
             recognition.interimResults = true;
             recognition.continuous = false;
-            recognition.lang = i16n('locale');
+            //recognition.lang = i16n('locale');
+            recognition.lang = 'ru-RU';
 
             recognition.onstart = function() {
                 result = '';

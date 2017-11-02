@@ -1,12 +1,14 @@
 require(
     ['underscore', 'Recognizer', 'TTS', 'util/Storage', 'util/i18n'],
-    function(_, Recognizer, TTS, Storage, i18n) {
+    function (_, Recognizer, TTS, Storage, i18n) {
         var options, listening;
         var beep = new Audio('beep.mp3');
-        var wsTimer=0;
+        var wsTimer = 0;
+        var askTimer = 0;
+        var isAsking = 0;
         var wsSocket;
-        var startedWebSockets=0;
-        var justSaid='';
+        var startedWebSockets = 0;
+        var justSaid = '';
 
         var rec = new Recognizer(
             {
@@ -16,9 +18,9 @@ require(
             }
         );
 
-        var tts = new TTS({ complete: listen });
+        var tts = new TTS({complete: listen});
 
-        chrome.runtime.onMessage.addListener(function(request) {
+        chrome.runtime.onMessage.addListener(function (request) {
             if (request.init === true) {
                 init();
             }
@@ -28,86 +30,108 @@ require(
         listen();
 
         function wsConnected() {
-         var payload = new Object();
-         payload.action = 'Subscribe';
-         payload.data = new Object();
-         payload.data.TYPE='events';
-         payload.data.EVENTS='SAY,SAYTO';
-         console.log('Subscribing to '+payload.data.EVENTS);
-         wsSocket.send(JSON.stringify(payload));
+            var payload = new Object();
+            payload.action = 'Subscribe';
+            payload.data = new Object();
+            payload.data.TYPE = 'events';
+            payload.data.EVENTS = 'SAY,SAYTO,ASK';
+            console.log('Subscribing to ' + payload.data.EVENTS);
+            wsSocket.send(JSON.stringify(payload));
         }
 
         function startWebSockets() {
             var loc = window.location, new_uri;
-            var serverUrl='';
+            var serverUrl = '';
             if (loc.protocol === "https:") {
-                    serverUrl = "wss:";
+                serverUrl = "wss:";
             } else {
-                    serverUrl = "ws:";
+                serverUrl = "ws:";
             }
-            serverUrl += "//" + Storage.local('address', i18n('settings.address.default')) + ':8002/majordomo';
+            var baseAddress = Storage.local('address', i18n('settings.address.default'));
+            if (baseAddress.indexOf(':') == -1) {
+                baseAddress = baseAddress + ':8001';
+            }
+            serverUrl += "//" + baseAddress + '/majordomo';
             try {
-             if (window.MozWebSocket) {
-               wsSocket = new MozWebSocket(serverUrl);
-             } else if (window.WebSocket) {
-               wsSocket = new WebSocket(serverUrl);
-             }
+                if (window.MozWebSocket) {
+                    wsSocket = new MozWebSocket(serverUrl);
+                } else if (window.WebSocket) {
+                    wsSocket = new WebSocket(serverUrl);
+                }
 
             } catch (e) {
-                 return false;
+                return false;
             }
             wsSocket.binaryType = 'blob';
-            wsSocket.onopen = function(msg) {
-             ///connected
-              startedWebSockets=1;
-              clearTimeout(wsTimer);
-              console.log('WS connected ('+serverUrl+')');
-              wsConnected();
+            wsSocket.onopen = function (msg) {
+                ///connected
+                startedWebSockets = 1;
+                clearTimeout(wsTimer);
+                console.log('WS connected (' + serverUrl + ')');
+                wsConnected();
             };
-            wsSocket.onmessage = function(msg) {
-              console.log('WS data ('+serverUrl+')');
-              var response;
-              var message='';
-              response = JSON.parse(msg.data);
-              console.log('Action:' + response.action);
-              if (response.action=='events') {
-                console.log(response);
-                var event_data=JSON.parse(response.data);
-                if (event_data.EVENT_DATA.NAME=='SAY') {
-                 message=event_data.EVENT_DATA.VALUE.message;
-                 if (message==justSaid) {
-                  message='';
-                 }
+            wsSocket.onmessage = function (msg) {
+                console.log('WS data (' + serverUrl + ')');
+                var response;
+                var message = '';
+                response = JSON.parse(msg.data);
+                console.log('Action:' + response.action);
+                if (response.action == 'events') {
+                    console.log(response);
+                    var event_data = JSON.parse(response.data);
+                    if (event_data.EVENT_DATA.NAME == 'ASK') {
+                        var promptLine = event_data.EVENT_DATA.VALUE.prompt;
+                        var target = event_data.EVENT_DATA.VALUE.target;
+                        target = target.toUpperCase();
+                        var terminal = Storage.local('terminal', i18n('settings.terminal.default'));
+                        terminal = terminal.toUpperCase();
+                        if (terminal == target || target == '' || target == '*') {
+                            isAsking=1;
+                            clearTimeout(askTimer);
+                            askTimer = setTimeout('isAsking=0;',15*1000);
+                            beep.play();
+                            if (promptLine!='') {
+                                message = promptLine;
+                            }
+                        }
+                    }
+                    if (event_data.EVENT_DATA.NAME == 'SAY') {
+                        message = event_data.EVENT_DATA.VALUE.message;
+                        if (message == justSaid) {
+                            message = '';
+                        }
+                    }
+                    if (event_data.EVENT_DATA.NAME == 'SAYTO') {
+                        message = event_data.EVENT_DATA.VALUE.message;
+                        var destination = event_data.EVENT_DATA.VALUE.destination;
+                        destination = destination.toUpperCase();
+                        var terminal = Storage.local('terminal', i18n('settings.terminal.default'));
+                        terminal = terminal.toUpperCase();
+                        if (destination == terminal) {
+                            console.log('Sayto action processed');
+                            justSaid = message;
+                        } else {
+                            message = '';
+                        }
+                    }
                 }
-                if (event_data.EVENT_DATA.NAME=='SAYTO') {
-                 message=event_data.EVENT_DATA.VALUE.message;
-                 var destination=event_data.EVENT_DATA.VALUE.destination;
-                 destination=destination.toUpperCase();
-                 var terminal=Storage.local('terminal', i18n('settings.terminal.default'));
-                 terminal=terminal.toUpperCase();
-                 if (destination==terminal) {
-                  console.log('Sayto action processed');
-                  justSaid=message;
-                 } else {
-                  message='';
-                 }
+                //console.log(event_data);
+                //console.log(message);
+                if (message != '') {
+                    notify(message);
+                    say(message);
                 }
-              }
-              if (message!='') {
-                 notify(message);
-                 say(message);
-              }
 
-              //$.publish('wsData', response);
-              return;
+                //$.publish('wsData', response);
+                return;
             };
-            wsSocket.onclose = function(msg) {
-              //disconnected
-              startedWebSockets=0;
-              wsTimer=setTimeout('startWebSockets();', 5*1000);
-              //$.publish('wsDisconnected', []);
-              console.log('WS disconnected ('+serverUrl+')');
-              return;
+            wsSocket.onclose = function (msg) {
+                //disconnected
+                startedWebSockets = 0;
+                wsTimer = setTimeout(startWebSockets, 5 * 1000);
+                //$.publish('wsDisconnected', []);
+                console.log('WS disconnected (' + serverUrl + ')');
+                return;
             };
             return true;
         }
@@ -119,7 +143,7 @@ require(
 
         function onRecognizerError(error) {
             if (error === 'no-speech') {
-                listen();
+                //listen();
             } else if (error === 'audio-capture') {
                 notify({text: i18n('settings.blocked')});
             } else if (error === 'not-allowed') {
@@ -132,9 +156,10 @@ require(
 
         function recognized(result) {
             if (tts && tts.isSpeaking()) return;
-            console.log('Recognized: '+result);
+            console.log('Recognized: ' + result);
             var input = getCommand(result);
             if (input) {
+                isAsking = 0;
                 beep.play();
                 process(input);
             }
@@ -148,8 +173,10 @@ require(
             if (!text) return '';
             if (listening) return text;
             var cmd = text;
-            var name = Storage.local('name', i18n('settings.assistant.name.default'));
+            var name = Storage.local('name', '');
             text = text.toLowerCase();
+            if (!name || isAsking == 1) return cmd;
+
             var pos = text.indexOf(name.toLowerCase());
             if (pos === -1 || text.length === name.length) return '';
             return cmd.substring(pos + name.length + 1);
@@ -159,25 +186,26 @@ require(
             listening = false;
             if (startedWebSockets) {
                 //eventBus.send('asr.result', input);
-                console.log('Sending to WS: '+input);
+                console.log('Sending to WS: ' + input);
             } else {
                 //init(_.partial(process, input));
             }
-            var serverUrl = "http://" + Storage.local('address', i18n('settings.address.default')) + '/command.php?qry='+encodeURIComponent(input)+'&terminal='+Storage.local('terminal', i18n('settings.terminal.default'));
+            var serverUrl = "http://" + Storage.local('address', i18n('settings.address.default')) + '/command.php?qry=' + encodeURIComponent(input) + '&terminal=' + Storage.local('terminal', i18n('settings.terminal.default'));
 
-                 $.ajax({
-                   url: serverUrl
-                  }).done(function(data) { 
-                   console.log('Returned: '+data);
-                  });
+            $.ajax({
+                url: serverUrl
+            }).done(function (data) {
+                console.log('Returned: ' + data);
+            });
 
 
         }
 
         function say(speech, lang) {
+            if (Storage.local('voice', '') == '') return;
             rec.stop();
             var speeches = speech.split('\\|');
-            speeches.forEach(function(s) {
+            speeches.forEach(function (s) {
                 tts.speak(s, lang);
             });
         }
@@ -186,7 +214,7 @@ require(
             var messages = _.isString(msg) ? [msg] : msg.text ? [msg.text] : msg['speeches'];
             if (messages) {
                 var name = Storage.local('name', i18n('settings.assistant.name.default'));
-                messages.forEach(function(msg) {
+                messages.forEach(function (msg) {
                     chrome.notifications.create({
                         type: "basic", iconUrl: "./img/icon128.png",
                         title: name,
@@ -208,6 +236,6 @@ require(
     }
 );
 
-chrome.browserAction.onClicked.addListener(function() {
+chrome.browserAction.onClicked.addListener(function () {
     chrome.runtime.openOptionsPage();
 });
