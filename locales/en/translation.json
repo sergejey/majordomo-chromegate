@@ -18,10 +18,26 @@
       "default" : "localhost",
       "empty" : "Please specify server address"
     },
+    "ws_port" : {
+      "label" : "Web-socket port",
+      "default" : "8002",
+      "empty" : "Please specify server port"
+    },
     "terminal" : {
       "label" : "Terminal name",
       "default" : "main",
       "empty" : "Please specify terminal name"
-    }   
+    },
+    "username" : {
+      "label" : "Command username",
+      "default" : "",
+      "empty" : "Please specify username"
+    },
+    "server_auth" : {
+      "label" : "Server authorization (username:password)",
+      "default" : "",
+      "empty" : "Please specify authorization"
+    }
+
   }
 }

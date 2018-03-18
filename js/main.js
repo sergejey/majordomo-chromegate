@@ -48,10 +48,13 @@ require(
                 serverUrl = "ws:";
             }
             var baseAddress = Storage.local('address', i18n('settings.address.default'));
+            var basePort =  Storage.local('ws_port', i18n('settings.ws_port.default'));
+            /*
             if (baseAddress.indexOf(':') == -1) {
                 baseAddress = baseAddress + ':8001';
             }
-            serverUrl += "//" + baseAddress + '/majordomo';
+            */
+            serverUrl += "//" + baseAddress + ':' + basePort + '/majordomo';
             try {
                 if (window.MozWebSocket) {
                     wsSocket = new MozWebSocket(serverUrl);
@@ -190,13 +193,27 @@ require(
             } else {
                 //init(_.partial(process, input));
             }
-            var serverUrl = "http://" + Storage.local('address', i18n('settings.address.default')) + '/command.php?qry=' + encodeURIComponent(input) + '&terminal=' + Storage.local('terminal', i18n('settings.terminal.default'));
+            var serverUrl = "http://" + Storage.local('address', i18n('settings.address.default')) + '/command.php?qry=' + encodeURIComponent(input) + '&terminal=' + Storage.local('terminal', i18n('settings.terminal.default')) + '&username=' + Storage.local('username', i18n('settings.username.default'));
 
-            $.ajax({
-                url: serverUrl
-            }).done(function (data) {
-                console.log('Returned: ' + data);
-            });
+            var server_auth = Storage.local('server_auth', i18n('settings.server_auth.default'));
+
+            if (server_auth !='') {
+                //console.log("Trying with server auth: "+server_auth);
+                $.ajax({
+                    url: serverUrl,
+                    headers: {
+                        "Authorization": "Basic " + btoa(server_auth)
+                    },
+                }).done(function (data) {
+                    console.log('Returned: ' + data);
+                });
+            } else {
+                $.ajax({
+                    url: serverUrl
+                }).done(function (data) {
+                    console.log('Returned: ' + data);
+                });
+            }
 
 
         }

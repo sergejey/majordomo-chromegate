@@ -1,3 +1,4 @@
+<div id="message"></div>
 <div class="well animated fadeInUp">
     <form action="#/settings" method="post" class="form-horizontal" id="settings">
         <fieldset>
@@ -15,11 +16,29 @@
                 </div>
             </div>
             <div class="form-group form-group">
+                <label for="ws_port" class="col-lg-4 control-label" data-i18n="settings.ws_port.label">Websocket port</label>
+                <div class="col-lg-8">
+                    <input type="text" class="form-control" id="ws_port" name="ws_port" value="<%= ws_port %>">
+                </div>
+            </div>
+            <div class="form-group form-group">
                 <label for="terminal" class="col-lg-4 control-label" data-i18n="settings.terminal.label">Terminal's system name</label>
                 <div class="col-lg-8">
                     <input type="text" class="form-control" id="terminal" name="terminal" value="<%= terminal %>">
                 </div>
-            </div>			
+            </div>
+            <div class="form-group form-group">
+                <label for="username" class="col-lg-4 control-label" data-i18n="settings.username.label">Command username</label>
+                <div class="col-lg-8">
+                    <input type="text" class="form-control" id="username" name="username" value="<%= username %>">
+                </div>
+            </div>
+            <div class="form-group form-group">
+                <label for="server_auth" class="col-lg-4 control-label" data-i18n="settings.server_auth.label">Server authorization (username:password)</label>
+                <div class="col-lg-8">
+                    <input type="text" class="form-control" id="server_auth" name="server_auth" value="<%= server_auth %>">
+                </div>
+            </div>
             <div class="form-group form-group">
                 <label for="voice" class="col-lg-4 control-label">Синтезатор речи</label>
                 <div class="col-lg-8">
@@ -56,4 +75,4 @@
         </fieldset>
     </form>
 </div>
-<div id="message"></div>
+
